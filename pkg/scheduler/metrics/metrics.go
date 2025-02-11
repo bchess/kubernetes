@@ -66,6 +66,7 @@ const (
 	PostFilter                  = "PostFilter"
 	PreScore                    = "PreScore"
 	Score                       = "Score"
+	PostScore                   = "PostScore"
 	ScoreExtensionNormalize     = "ScoreExtensionNormalize"
 	PreBind                     = "PreBind"
 	Bind                        = "Bind"

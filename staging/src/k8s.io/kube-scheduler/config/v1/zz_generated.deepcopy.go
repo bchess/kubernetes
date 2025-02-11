@@ -443,6 +443,7 @@ func (in *Plugins) DeepCopyInto(out *Plugins) {
 	in.PostFilter.DeepCopyInto(&out.PostFilter)
 	in.PreScore.DeepCopyInto(&out.PreScore)
 	in.Score.DeepCopyInto(&out.Score)
+	in.PostScore.DeepCopyInto(&out.PostScore)
 	in.Reserve.DeepCopyInto(&out.Reserve)
 	in.Permit.DeepCopyInto(&out.Permit)
 	in.PreBind.DeepCopyInto(&out.PreBind)

@@ -81,3 +81,16 @@ func (p *instrumentedScorePlugin) Score(ctx context.Context, state *framework.Cy
 	p.metric.Inc()
 	return p.ScorePlugin.Score(ctx, state, pod, nodeName)
 }
+
+type instrumentedPostScorePlugin struct {
+	framework.PostScorePlugin
+
+	metric compbasemetrics.CounterMetric
+}
+
+var _ framework.PostScorePlugin = &instrumentedPostScorePlugin{}
+
+func (p *instrumentedPostScorePlugin) PostScore(ctx context.Context, state *framework.CycleState, pod *v1.Pod, scores []framework.NodePluginScores) *framework.Status {
+	p.metric.Inc()
+	return p.PostScorePlugin.PostScore(ctx, state, pod, scores)
+}

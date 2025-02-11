@@ -732,6 +732,9 @@ func autoConvert_v1_Plugins_To_config_Plugins(in *v1.Plugins, out *config.Plugin
 	if err := Convert_v1_PluginSet_To_config_PluginSet(&in.PreScore, &out.PreScore, s); err != nil {
 		return err
 	}
+	if err := Convert_v1_PluginSet_To_config_PluginSet(&in.PostScore, &out.PostScore, s); err != nil {
+		return err
+	}
 	if err := Convert_v1_PluginSet_To_config_PluginSet(&in.Score, &out.Score, s); err != nil {
 		return err
 	}
@@ -781,6 +784,9 @@ func autoConvert_config_Plugins_To_v1_Plugins(in *config.Plugins, out *v1.Plugin
 		return err
 	}
 	if err := Convert_config_PluginSet_To_v1_PluginSet(&in.Score, &out.Score, s); err != nil {
+		return err
+	}
+	if err := Convert_config_PluginSet_To_v1_PluginSet(&in.PostScore, &out.PostScore, s); err != nil {
 		return err
 	}
 	if err := Convert_config_PluginSet_To_v1_PluginSet(&in.Reserve, &out.Reserve, s); err != nil {

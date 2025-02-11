@@ -860,6 +860,11 @@ func prioritizeNodes(
 			loggerVTen.Info("Calculated node's final score for pod", "pod", klog.KObj(pod), "node", nodesScores[i].Name, "score", nodesScores[i].TotalScore)
 		}
 	}
+
+	postScoreStatus := fwk.RunPostScorePlugins(ctx, state, pod, nodesScores)
+	if !postScoreStatus.IsSuccess() {
+		return nil, postScoreStatus.AsError()
+	}
 	return nodesScores, nil
 }
 
