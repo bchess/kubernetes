@@ -436,6 +436,9 @@ func (sched *Scheduler) schedulePod(ctx context.Context, fwk framework.Framework
 	if err != nil {
 		return result, err
 	}
+	state.Write(framework.NodePluginScoresStateKey, &framework.NodePluginScoresState{
+		NodePluginScores: priorityList,
+	})
 
 	host, _, err := selectHost(priorityList, numberOfHighestScoredNodesToReport)
 	trace.Step("Prioritizing done")

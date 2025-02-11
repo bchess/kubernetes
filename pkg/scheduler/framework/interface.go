@@ -71,6 +71,17 @@ type PluginScore struct {
 	Score int64
 }
 
+var NodePluginScoresStateKey StateKey = "kubernetes.io/node-plugin-scores"
+
+type NodePluginScoresState struct {
+	sync.Mutex
+	NodePluginScores []NodePluginScores
+}
+
+func (s *NodePluginScoresState) Clone() StateData {
+	return s
+}
+
 // Code is the Status code/type which is returned from plugins.
 type Code int
 
