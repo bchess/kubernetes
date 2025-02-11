@@ -197,9 +197,6 @@ type Plugins struct {
 	// Score is a list of plugins that should be invoked when ranking nodes that have passed the filtering phase.
 	Score PluginSet `json:"score,omitempty"`
 
-	// Score is a list of plugins that should be invoked when ranking nodes that have passed the filtering phase.
-	PostScore PluginSet `json:"postScore,omitempty"`
-
 	// Reserve is a list of plugins invoked when reserving/unreserving resources
 	// after a node is assigned to run the pod.
 	Reserve PluginSet `json:"reserve,omitempty"`

@@ -63,7 +63,6 @@ type frameworkImpl struct {
 	postFilterPlugins    []framework.PostFilterPlugin
 	preScorePlugins      []framework.PreScorePlugin
 	scorePlugins         []framework.ScorePlugin
-	postScorePlugins     []framework.PostScorePlugin
 	reservePlugins       []framework.ReservePlugin
 	preBindPlugins       []framework.PreBindPlugin
 	bindPlugins          []framework.BindPlugin
@@ -109,7 +108,6 @@ func (f *frameworkImpl) getExtensionPoints(plugins *config.Plugins) []extensionP
 		{&plugins.Reserve, &f.reservePlugins},
 		{&plugins.PreScore, &f.preScorePlugins},
 		{&plugins.Score, &f.scorePlugins},
-		{&plugins.PostScore, &f.postScorePlugins},
 		{&plugins.PreBind, &f.preBindPlugins},
 		{&plugins.Bind, &f.bindPlugins},
 		{&plugins.PostBind, &f.postBindPlugins},
@@ -423,12 +421,6 @@ func (f *frameworkImpl) setInstrumentedPlugins() {
 		f.scorePlugins[i] = &instrumentedScorePlugin{
 			ScorePlugin: f.scorePlugins[i],
 			metric:      metrics.PluginEvaluationTotal.WithLabelValues(pl.Name(), metrics.Score, f.profileName),
-		}
-	}
-	for i, pl := range f.postScorePlugins {
-		f.postScorePlugins[i] = &instrumentedPostScorePlugin{
-			PostScorePlugin: f.postScorePlugins[i],
-			metric:          metrics.PluginEvaluationTotal.WithLabelValues(pl.Name(), metrics.PostScore, f.profileName),
 		}
 	}
 }
@@ -1231,22 +1223,6 @@ func (f *frameworkImpl) runScoreExtension(ctx context.Context, pl framework.Scor
 	startTime := time.Now()
 	status := pl.ScoreExtensions().NormalizeScore(ctx, state, pod, nodeScoreList)
 	f.metricsRecorder.ObservePluginDurationAsync(metrics.ScoreExtensionNormalize, pl.Name(), status.Code().String(), metrics.SinceInSeconds(startTime))
-	return status
-}
-
-func (f *frameworkImpl) RunPostScorePlugins(ctx context.Context, state *framework.CycleState, pod *v1.Pod, scores []framework.NodePluginScores) *framework.Status {
-	if len(f.postScorePlugins) == 0 {
-		return framework.NewStatus(framework.Success, "")
-	}
-	startTime := time.Now()
-	status := framework.NewStatus(framework.Success, "")
-	for _, pl := range f.postScorePlugins {
-		status = pl.PostScore(ctx, state, pod, scores)
-		if !status.IsSuccess() {
-			return status
-		}
-	}
-	f.metricsRecorder.ObservePluginDurationAsync(metrics.PostScore, f.postScorePlugins[0].Name(), status.Code().String(), metrics.SinceInSeconds(startTime))
 	return status
 }
 

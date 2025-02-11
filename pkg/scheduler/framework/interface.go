@@ -505,14 +505,6 @@ type ScorePlugin interface {
 	ScoreExtensions() ScoreExtensions
 }
 
-type PostScorePlugin interface {
-	Plugin
-	// Score is called on each filtered node. It must return success and an integer
-	// indicating the rank of the node. All scoring plugins must return success or
-	// the pod will be rejected.
-	PostScore(ctx context.Context, state *CycleState, p *v1.Pod, scores []NodePluginScores) *Status
-}
-
 // ReservePlugin is an interface for plugins with Reserve and Unreserve
 // methods. These are meant to update the state of the plugin. This concept
 // used to be called 'assume' in the original scheduler. These plugins should
@@ -820,9 +812,6 @@ type PluginsRunner interface {
 	// It also returns *Status, which is set to non-success if any of the plugins returns
 	// a non-success status.
 	RunScorePlugins(context.Context, *CycleState, *v1.Pod, []*NodeInfo) ([]NodePluginScores, *Status)
-	// RunPostScorePlugins runs the set of configured PostScore plugins.
-
-	RunPostScorePlugins(context.Context, *CycleState, *v1.Pod, []NodePluginScores) *Status
 	// RunFilterPlugins runs the set of configured Filter plugins for pod on
 	// the given node. Note that for the node being evaluated, the passed nodeInfo
 	// reference could be different from the one in NodeInfoSnapshot map (e.g., pods

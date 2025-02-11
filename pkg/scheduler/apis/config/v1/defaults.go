@@ -50,7 +50,6 @@ func pluginsNames(p *configv1.Plugins) []string {
 		p.Reserve,
 		p.PreScore,
 		p.Score,
-		p.PostScore,
 		p.PreBind,
 		p.Bind,
 		p.PostBind,

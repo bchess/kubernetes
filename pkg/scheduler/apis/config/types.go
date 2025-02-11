@@ -157,9 +157,6 @@ type Plugins struct {
 	// Score is a list of plugins that should be invoked when ranking nodes that have passed the filtering phase.
 	Score PluginSet
 
-	// PostScore is a list of plugins that are invoked after scoring.
-	PostScore PluginSet
-
 	// Reserve is a list of plugins invoked when reserving/unreserving resources
 	// after a node is assigned to run the pod.
 	Reserve PluginSet
@@ -242,7 +239,6 @@ func (p *Plugins) Names() []string {
 		p.Reserve,
 		p.PreScore,
 		p.Score,
-		p.PostScore,
 		p.PreBind,
 		p.Bind,
 		p.PostBind,

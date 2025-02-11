@@ -167,7 +167,6 @@ func validatePluginConfig(path *field.Path, apiVersion string, profile *config.K
 			"postFilter": profile.Plugins.PostFilter,
 			"preScore":   profile.Plugins.PreScore,
 			"score":      profile.Plugins.Score,
-			"postScore":  profile.Plugins.PostScore,
 			"reserve":    profile.Plugins.Reserve,
 			"permit":     profile.Plugins.Permit,
 			"preBind":    profile.Plugins.PreBind,
