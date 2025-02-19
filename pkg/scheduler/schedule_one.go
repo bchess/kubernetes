@@ -424,13 +424,16 @@ func (sched *Scheduler) schedulePod(ctx context.Context, fwk framework.Framework
 	}
 
 	// When only one node after predicate, just use it.
-	if len(feasibleNodes) == 1 {
-		return ScheduleResult{
-			SuggestedHost:  feasibleNodes[0].Node().Name,
-			EvaluatedNodes: 1 + len(diagnosis.NodeToStatusMap),
-			FeasibleNodes:  1,
-		}, nil
-	}
+	/*
+		if len(feasibleNodes) == 1 {
+			logger.Info("Only one node after predicate, just use it", "node", feasibleNodes[0].Node().Name)
+			return ScheduleResult{
+				SuggestedHost:  feasibleNodes[0].Node().Name,
+				EvaluatedNodes: 1 + len(diagnosis.NodeToStatusMap),
+				FeasibleNodes:  1,
+			}, nil
+		}
+	*/
 
 	priorityList, err := prioritizeNodes(ctx, sched.Extenders, fwk, state, pod, feasibleNodes)
 	if err != nil {
@@ -875,6 +878,9 @@ var errEmptyPriorityList = errors.New("empty priorityList")
 func selectHost(nodeScoreList []framework.NodePluginScores, count int) (string, []framework.NodePluginScores, error) {
 	if len(nodeScoreList) == 0 {
 		return "", nil, errEmptyPriorityList
+	}
+	if len(nodeScoreList) == 1 {
+		return nodeScoreList[0].Name, nodeScoreList, nil
 	}
 
 	var h nodeScoreHeap = nodeScoreList
