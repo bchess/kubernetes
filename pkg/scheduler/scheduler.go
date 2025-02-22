@@ -381,6 +381,80 @@ func New(ctx context.Context,
 	return sched, nil
 }
 
+func NewN(numSchedulers int, ctx context.Context,
+	client clientset.Interface,
+	informerFactory informers.SharedInformerFactory,
+	dynInformerFactory dynamicinformer.DynamicSharedInformerFactory,
+	recorderFactory profile.RecorderFactory,
+	opts ...Option) ([]*Scheduler, error) {
+
+	schedulers := make([]*Scheduler, numSchedulers)
+
+	firstScheduler, err := New(ctx, client, informerFactory, dynInformerFactory, recorderFactory, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("initializing first scheduler: %w", err)
+	}
+	schedulers[0] = firstScheduler
+	var aFramework framework.Framework
+	for k := range firstScheduler.Profiles {
+		aFramework = firstScheduler.Profiles[k]
+		break
+	}
+
+	options := defaultSchedulerOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	registry := frameworkplugins.NewInTreeRegistry()
+	if err := registry.Merge(options.frameworkOutOfTreeRegistry); err != nil {
+		return nil, err
+	}
+	stopEverything := ctx.Done()
+	metricsRecorder := metrics.NewMetricsAsyncRecorder(1000, time.Second, stopEverything)
+	waitingPods := frameworkruntime.NewWaitingPodsMap()
+
+	for i := 1; i < numSchedulers; i++ {
+		nodeInfoSnapshot := internalcache.NewEmptySnapshot()
+
+		profiles, err := profile.NewMap(ctx, options.profiles, registry, recorderFactory,
+			frameworkruntime.WithComponentConfigVersion(options.componentConfigVersion),
+			frameworkruntime.WithClientSet(firstScheduler.client),
+			frameworkruntime.WithKubeConfig(options.kubeConfig),
+			frameworkruntime.WithInformerFactory(informerFactory),
+			frameworkruntime.WithResourceClaimCache(aFramework.ResourceClaimCache()),
+			frameworkruntime.WithSnapshotSharedLister(nodeInfoSnapshot),
+			frameworkruntime.WithCaptureProfile(frameworkruntime.CaptureProfile(options.frameworkCapturer)),
+			frameworkruntime.WithParallelism(int(options.parallelism)),
+			frameworkruntime.WithExtenders(firstScheduler.Extenders),
+			frameworkruntime.WithMetricsRecorder(metricsRecorder),
+			frameworkruntime.WithWaitingPods(waitingPods),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("initializing profiles: %v", err)
+		}
+
+		schedulers[i] = &Scheduler{
+			Cache:                    firstScheduler.Cache,
+			client:                   firstScheduler.client,
+			nodeInfoSnapshot:         nodeInfoSnapshot,
+			percentageOfNodesToScore: firstScheduler.percentageOfNodesToScore,
+			Extenders:                firstScheduler.Extenders,
+			StopEverything:           firstScheduler.StopEverything,
+			SchedulingQueue:          firstScheduler.SchedulingQueue,
+			Profiles:                 profiles,
+			logger:                   firstScheduler.logger,
+			NextPod:                  firstScheduler.NextPod,
+		}
+		schedulers[i].applyDefaultHandlers()
+
+		for _, fwk := range profiles {
+			fwk.SetPodNominator(firstScheduler.SchedulingQueue)
+		}
+	}
+	return schedulers, nil
+}
+
 // defaultQueueingHintFn is the default queueing hint function.
 // It always returns Queue as the queueing hint.
 var defaultQueueingHintFn = func(_ klog.Logger, _ *v1.Pod, _, _ interface{}) (framework.QueueingHint, error) {
