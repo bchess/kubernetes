@@ -249,8 +249,7 @@ func WithLogger(logger klog.Logger) Option {
 // defaultFrameworkOptions are applied when no option corresponding to those fields exist.
 func defaultFrameworkOptions(stopCh <-chan struct{}) frameworkOptions {
 	return frameworkOptions{
-		metricsRecorder: metrics.NewMetricsAsyncRecorder(1000, time.Second, stopCh),
-		parallelizer:    parallelize.NewParallelizer(parallelize.DefaultParallelism),
+		parallelizer: parallelize.NewParallelizer(parallelize.DefaultParallelism),
 	}
 }
 
@@ -261,6 +260,9 @@ func NewFramework(ctx context.Context, r Registry, profile *config.KubeScheduler
 	options := defaultFrameworkOptions(ctx.Done())
 	for _, opt := range opts {
 		opt(&options)
+	}
+	if options.metricsRecorder == nil {
+		options.metricsRecorder = metrics.NewMetricsAsyncRecorder(1000, time.Second, ctx.Done())
 	}
 
 	logger := klog.FromContext(ctx)

@@ -107,6 +107,8 @@ type Scheduler struct {
 
 	// registeredHandlers contains the registrations of all handlers. It's used to check if all handlers have finished syncing before the scheduling cycles start.
 	registeredHandlers []cache.ResourceEventHandlerRegistration
+
+	metricsRecorder *metrics.MetricAsyncRecorder
 }
 
 func (sched *Scheduler) applyDefaultHandlers() {
@@ -370,6 +372,7 @@ func New(ctx context.Context,
 		SchedulingQueue:          podQueue,
 		Profiles:                 profiles,
 		logger:                   logger,
+		metricsRecorder:          metricsRecorder,
 	}
 	sched.NextPod = podQueue.Pop
 	sched.applyDefaultHandlers()
@@ -410,8 +413,7 @@ func NewN(numSchedulers int, ctx context.Context,
 	if err := registry.Merge(options.frameworkOutOfTreeRegistry); err != nil {
 		return nil, err
 	}
-	stopEverything := ctx.Done()
-	metricsRecorder := metrics.NewMetricsAsyncRecorder(1000, time.Second, stopEverything)
+	metricsRecorder := firstScheduler.metricsRecorder
 	waitingPods := frameworkruntime.NewWaitingPodsMap()
 
 	for i := 1; i < numSchedulers; i++ {
