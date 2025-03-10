@@ -883,48 +883,57 @@ func selectHost(nodeScoreList []framework.NodePluginScores, count int) (string, 
 		return nodeScoreList[0].Name, nodeScoreList, nil
 	}
 
-	var h nodeScoreHeap = nodeScoreList
-	heap.Init(&h)
-	cntOfMaxScore := 1
-	selectedIndex := 0
-	// The top of the heap is the NodeScoreResult with the highest score.
-	sortedNodeScoreList := make([]framework.NodePluginScores, 0, count)
-	sortedNodeScoreList = append(sortedNodeScoreList, heap.Pop(&h).(framework.NodePluginScores))
+	// Initialize with the first element.
+	maxScore := nodeScoreList[0].TotalScore
+	maxNodes := make([]framework.NodePluginScores, 1, len(nodeScoreList)-1)
+	maxNodes[0] = nodeScoreList[0]
+	others := make([]framework.NodePluginScores, 0, len(nodeScoreList)-1)
 
-	// This for-loop will continue until all Nodes with the highest scores get checked for a reservoir sampling,
-	// and sortedNodeScoreList gets (count - 1) elements.
-	for ns := heap.Pop(&h).(framework.NodePluginScores); ; ns = heap.Pop(&h).(framework.NodePluginScores) {
-		if ns.TotalScore != sortedNodeScoreList[0].TotalScore && len(sortedNodeScoreList) == count {
+	// Single pass to update maxNodes and others.
+	for _, ns := range nodeScoreList[1:] {
+		if ns.TotalScore > maxScore {
+			// New maximum found; move all previous max nodes to others.
+			others = append(others, maxNodes...)
+			maxScore = ns.TotalScore
+			maxNodes = append(maxNodes[:0], ns)
+		} else if ns.TotalScore == maxScore {
+			maxNodes = append(maxNodes, ns)
+		} else {
+			others = append(others, ns)
+		}
+	}
+
+	// Randomly select a candidate from the max-scoring nodes.
+	candidateIndex := rand.Intn(len(maxNodes))
+	candidate := maxNodes[candidateIndex]
+
+	// Build the sorted top list.
+	var sortedTop []framework.NodePluginScores
+	if len(maxNodes) >= count {
+		// If we have more or equal max-score nodes than needed, just use the first 'count'.
+		sortedTop = maxNodes[:count]
+	} else {
+		// Use all max-score nodes.
+		sortedTop = append([]framework.NodePluginScores{}, maxNodes...)
+		// Fill the remainder from 'others' (which may need sorting).
+
+		var h nodeScoreHeap = others
+		heap.Init(&h)
+		for i := len(sortedTop); i < count; i++ {
+			ns := heap.Pop(&h).(framework.NodePluginScores)
+			sortedTop = append(sortedTop, ns)
+		}
+	}
+
+	// Ensure that the candidate is at the first position.
+	for i, ns := range sortedTop {
+		if ns.Name == candidate.Name {
+			sortedTop[0], sortedTop[i] = sortedTop[i], sortedTop[0]
 			break
 		}
-
-		if ns.TotalScore == sortedNodeScoreList[0].TotalScore {
-			cntOfMaxScore++
-			if rand.Intn(cntOfMaxScore) == 0 {
-				// Replace the candidate with probability of 1/cntOfMaxScore
-				selectedIndex = cntOfMaxScore - 1
-			}
-		}
-
-		sortedNodeScoreList = append(sortedNodeScoreList, ns)
-
-		if h.Len() == 0 {
-			break
-		}
 	}
 
-	if selectedIndex != 0 {
-		// replace the first one with selected one
-		previous := sortedNodeScoreList[0]
-		sortedNodeScoreList[0] = sortedNodeScoreList[selectedIndex]
-		sortedNodeScoreList[selectedIndex] = previous
-	}
-
-	if len(sortedNodeScoreList) > count {
-		sortedNodeScoreList = sortedNodeScoreList[:count]
-	}
-
-	return sortedNodeScoreList[0].Name, sortedNodeScoreList, nil
+	return candidate.Name, sortedTop, nil
 }
 
 // nodeScoreHeap is a heap of framework.NodePluginScores.
