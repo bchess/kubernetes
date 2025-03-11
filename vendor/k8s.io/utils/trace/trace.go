@@ -57,11 +57,15 @@ func writeTraceItemSummary(b *bytes.Buffer, msg string, totalTime time.Duration,
 		b.WriteString(" ")
 	}
 
-	b.WriteString(fmt.Sprintf("%vms (%v)", durationToMilliseconds(totalTime), startTime.Format("15:04:05.000")))
+	b.WriteString(fmt.Sprintf("%vus (%v)", durationToMicroseconds(totalTime), startTime.Format("15:04:05.000000")))
 }
 
 func durationToMilliseconds(timeDuration time.Duration) int64 {
 	return timeDuration.Nanoseconds() / 1e6
+}
+
+func durationToMicroseconds(timeDuration time.Duration) int64 {
+	return timeDuration.Nanoseconds() / 1e3
 }
 
 type traceItem interface {
@@ -228,7 +232,7 @@ func (t *Trace) logTrace() {
 		}
 
 		// if any step took more than it's share of the total allowed time, it deserves a higher log level
-		buffer.WriteString(fmt.Sprintf("(%v) (total time: %vms):", t.startTime.Format("02-Jan-2006 15:04:05.000"), totalTime.Milliseconds()))
+		buffer.WriteString(fmt.Sprintf("(%v) (total time: %vus):", t.startTime.Format("02-Jan-2006 15:04:05.000000"), totalTime.Microseconds()))
 		stepThreshold := t.calculateStepThreshold()
 		t.writeTraceSteps(&buffer, fmt.Sprintf("\nTrace[%d]: ", traceNum), stepThreshold)
 		buffer.WriteString(fmt.Sprintf("\nTrace[%d]: [%v] [%v] END\n", traceNum, t.endTime.Sub(t.startTime), totalTime))
