@@ -183,8 +183,8 @@ func (cache *cacheImpl) Dump() *Dump {
 // This function tracks generation number of NodeInfo and updates only the
 // entries of an existing snapshot that have changed after the snapshot was taken.
 func (cache *cacheImpl) UpdateSnapshot(logger klog.Logger, nodeSnapshot *Snapshot) error {
-	cache.mu.Lock()
-	defer cache.mu.Unlock()
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
 	// Get the last generation of the snapshot.
 	snapshotGeneration := nodeSnapshot.generation
