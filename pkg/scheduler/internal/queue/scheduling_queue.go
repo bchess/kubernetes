@@ -1418,6 +1418,9 @@ func (p *PriorityQueue) nominatedPodToInfo(np PodRef) *framework.PodInfo {
 }
 
 func (p *PriorityQueue) nominatedPodsToInfo(nominatedPods []PodRef) []*framework.PodInfo {
+	if len(nominatedPods) == 0 {
+		return []*framework.PodInfo{}
+	}
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	p.activeQLock.RLock()
