@@ -58,8 +58,17 @@ func (r *resourceAllocationScorer) score(
 		return 0, framework.NewStatus(framework.Error, "resources not found")
 	}
 
-	requested := make([]int64, len(r.resources))
-	allocatable := make([]int64, len(r.resources))
+	var requestedBuf [4]int64
+	var allocatableBuf [4]int64
+	var requested []int64
+	var allocatable []int64
+	if len(r.resources) <= 4 {
+		requested = requestedBuf[0:]
+		allocatable = allocatableBuf[0:]
+	} else {
+		requested = make([]int64, len(r.resources))
+		allocatable = make([]int64, len(r.resources))
+	}
 	for i := range r.resources {
 		alloc, req := r.calculateResourceAllocatableRequest(logger, nodeInfo, v1.ResourceName(r.resources[i].Name), podRequests[i])
 		// Only fill the extended resource entry when it's non-zero.

@@ -421,7 +421,7 @@ func Fits(pod *v1.Pod, nodeInfo *framework.NodeInfo) []InsufficientResource {
 }
 
 func fitsRequest(podRequest *preFilterState, nodeInfo *framework.NodeInfo, ignoredExtendedResources, ignoredResourceGroups sets.Set[string]) []InsufficientResource {
-	insufficientResources := make([]InsufficientResource, 0, 4)
+	var insufficientResources []InsufficientResource
 
 	allowedPodNumber := nodeInfo.Allocatable.AllowedPodNumber
 	if len(nodeInfo.Pods)+1 > allowedPodNumber {
