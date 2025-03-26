@@ -76,7 +76,7 @@ type taintsFilterFunc func(*v1.Taint) bool
 // Returns true if there is an untolerated taint
 // Returns false if all taints are tolerated
 func FindMatchingUntoleratedTaint(taints []v1.Taint, tolerations []v1.Toleration, inclusionFilter taintsFilterFunc) (v1.Taint, bool) {
-	var filteredTaintsBuf [4]v1.Taint
+	var filteredTaintsBuf [8]v1.Taint
 	filteredTaints := filteredTaintsBuf[:0]
 	getFilteredTaints(taints, inclusionFilter, &filteredTaints)
 	for _, taint := range filteredTaints {

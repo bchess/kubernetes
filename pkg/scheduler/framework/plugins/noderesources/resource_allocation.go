@@ -18,6 +18,7 @@ package noderesources
 
 import (
 	"context"
+	"sync"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -44,6 +45,14 @@ type resourceAllocationScorer struct {
 	resources    []config.ResourceSpec
 }
 
+var scorePool = &sync.Pool{
+	New: func() any {
+		v := new([]int64)
+		*v = make([]int64, 4)
+		return v
+	},
+}
+
 // score will use `scorer` function to calculate the score.
 func (r *resourceAllocationScorer) score(
 	ctx context.Context,
@@ -58,16 +67,18 @@ func (r *resourceAllocationScorer) score(
 		return 0, framework.NewStatus(framework.Error, "resources not found")
 	}
 
-	var requestedBuf [4]int64
-	var allocatableBuf [4]int64
 	var requested []int64
 	var allocatable []int64
-	if len(r.resources) <= 4 {
-		requested = requestedBuf[0:]
-		allocatable = allocatableBuf[0:]
-	} else {
+	if len(r.resources) > 4 {
 		requested = make([]int64, len(r.resources))
 		allocatable = make([]int64, len(r.resources))
+	} else {
+		requestedBuf := scorePool.Get().(*[]int64)
+		allocatableBuf := scorePool.Get().(*[]int64)
+		defer scorePool.Put(requestedBuf)
+		defer scorePool.Put(allocatableBuf)
+		requested = *requestedBuf
+		allocatable = *allocatableBuf
 	}
 	for i := range r.resources {
 		alloc, req := r.calculateResourceAllocatableRequest(logger, nodeInfo, v1.ResourceName(r.resources[i].Name), podRequests[i])
