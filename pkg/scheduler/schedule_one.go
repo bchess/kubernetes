@@ -193,24 +193,15 @@ func (sched *Scheduler) schedulingCycle(
 	// This allows us to keep scheduling without waiting on binding to occur.
 	assumedPodInfo := podInfo.DeepCopy()
 	assumedPod := assumedPodInfo.Pod
-	// assume modifies `assumedPod` by setting NodeName=scheduleResult.SuggestedHost
-	err = sched.assume(logger, assumedPod, scheduleResult.SuggestedHost)
-	if err != nil {
-		// This is most probably result of a BUG in retrying logic.
-		// We report an error here so that pod scheduling can be retried.
-		// This relies on the fact that Error will check if the pod has been bound
-		// to a node and if so will not add it back to the unscheduled pods queue
-		// (otherwise this would cause an infinite loop).
-		return ScheduleResult{nominatingInfo: clearNominatedNode}, assumedPodInfo, framework.AsStatus(err)
-	}
 
 	// Run the Reserve method of reserve plugins.
 	if sts := fwk.RunReservePluginsReserve(ctx, state, assumedPod, scheduleResult.SuggestedHost); !sts.IsSuccess() {
 		// trigger un-reserve to clean up state associated with the reserved Pod
 		fwk.RunReservePluginsUnreserve(ctx, state, assumedPod, scheduleResult.SuggestedHost)
-		if forgetErr := sched.Cache.ForgetPod(logger, assumedPod); forgetErr != nil {
-			logger.Error(forgetErr, "Scheduler cache ForgetPod failed")
-		}
+		/*
+			if forgetErr := sched.Cache.ForgetPod(logger, assumedPod); forgetErr != nil {
+				logger.Error(forgetErr, "Scheduler cache ForgetPod failed")
+			}*/
 
 		if sts.IsRejected() {
 			fitErr := &framework.FitError{
@@ -231,9 +222,10 @@ func (sched *Scheduler) schedulingCycle(
 	if !runPermitStatus.IsWait() && !runPermitStatus.IsSuccess() {
 		// trigger un-reserve to clean up state associated with the reserved Pod
 		fwk.RunReservePluginsUnreserve(ctx, state, assumedPod, scheduleResult.SuggestedHost)
-		if forgetErr := sched.Cache.ForgetPod(logger, assumedPod); forgetErr != nil {
-			logger.Error(forgetErr, "Scheduler cache ForgetPod failed")
-		}
+		/*
+			if forgetErr := sched.Cache.ForgetPod(logger, assumedPod); forgetErr != nil {
+				logger.Error(forgetErr, "Scheduler cache ForgetPod failed")
+			}*/
 
 		if runPermitStatus.IsRejected() {
 			fitErr := &framework.FitError{
@@ -248,6 +240,17 @@ func (sched *Scheduler) schedulingCycle(
 		}
 
 		return ScheduleResult{nominatingInfo: clearNominatedNode}, assumedPodInfo, runPermitStatus
+	}
+
+	// assume modifies `assumedPod` by setting NodeName=scheduleResult.SuggestedHost
+	err = sched.assume(logger, assumedPod, scheduleResult.SuggestedHost)
+	if err != nil {
+		// This is most probably result of a BUG in retrying logic.
+		// We report an error here so that pod scheduling can be retried.
+		// This relies on the fact that Error will check if the pod has been bound
+		// to a node and if so will not add it back to the unscheduled pods queue
+		// (otherwise this would cause an infinite loop).
+		return ScheduleResult{nominatingInfo: clearNominatedNode}, assumedPodInfo, framework.AsStatus(err)
 	}
 
 	// At the end of a successful scheduling cycle, pop and move up Pods if needed.
