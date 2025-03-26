@@ -882,6 +882,8 @@ func selectHost(nodeScoreList []framework.NodePluginScores, count int) (string, 
 	if len(nodeScoreList) == 1 {
 		return nodeScoreList[0].Name, nodeScoreList, nil
 	}
+	// Can only return as many scores as we have
+	count = min(count, len(nodeScoreList))
 
 	// Initialize with the first element.
 	maxScore := nodeScoreList[0].TotalScore
